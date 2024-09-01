@@ -1,5 +1,6 @@
 package com.akerumort.VacationPayCalculator.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
@@ -27,7 +28,6 @@ public class VacationPayRequestDto {
     @Min(value = 1, message = "Vacation days must be at least 1")
     private int vacationDays;
 
-    @NotEmpty(message = "Vacation dates cannot be empty")
-    private List<@NotNull(message = "Date cannot be null")
-            LocalDate> vacationDates;
+    @Valid
+    private List<LocalDate> vacationDates;
 }

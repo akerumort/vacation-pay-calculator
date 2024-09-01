@@ -38,8 +38,8 @@ public class VacationPayService {
         }
     }
 
-    private int filterOutHolidaysAndWeekends(List<LocalDate> vacationDays) {
-        return (int) vacationDays.stream().filter(date -> !isHolidayOrWeekend(date)).count();
+    private int filterOutHolidaysAndWeekends(List<LocalDate> vacationDates) {
+        return (int) vacationDates.stream().filter(date -> !isHolidayOrWeekend(date)).count();
     }
 
     private boolean isHolidayOrWeekend(LocalDate date) {
