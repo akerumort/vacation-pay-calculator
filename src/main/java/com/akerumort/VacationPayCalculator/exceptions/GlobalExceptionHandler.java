@@ -17,7 +17,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, String>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
         Map<String, String> errors = new HashMap<>();
-        errors.put("error", "Malformed JSON request");
+        String errorMessage = "Invalid JSON format in the request. Details: " + ex.getMessage();
+        errors.put("error", errorMessage);
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
 
@@ -35,14 +36,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CustomValidationException.class)
     public ResponseEntity<Map<String, String>> handleCustomValidationException(CustomValidationException ex) {
         Map<String, String> error = new HashMap<>();
-        error.put("error", ex.getMessage());
+        error.put("error", "Validation error: " + ex.getMessage());
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
         Map<String, String> error = new HashMap<>();
-        error.put("error", "An unexpected error occurred");
+        error.put("error", "An unexpected error occurred. Details: " + ex.getMessage());
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
