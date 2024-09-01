@@ -1,5 +1,6 @@
 package com.akerumort.VacationPayCalculator.services;
 
+import com.akerumort.VacationPayCalculator.exceptions.CustomValidationException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -16,18 +17,25 @@ public class VacationPayService {
     private static final BigDecimal TAX_RATE = new BigDecimal("0.13"); // НДФЛ 13%
 
     public BigDecimal calculateVacationPay(BigDecimal averageSalary, int vacationDays, List<LocalDate> vacationDates) {
-        if (vacationDates != null && !vacationDates.isEmpty()) {
-            vacationDays = filterOutHolidaysAndWeekends(vacationDates);
+        try {
+            if (vacationDates != null && !vacationDates.isEmpty()) {
+                vacationDays = filterOutHolidaysAndWeekends(vacationDates);
+            }
+            // до вычета налогов
+            BigDecimal grossVacationPay = averageSalary.divide(WORK_DAYS_IN_MONTH, 2, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(vacationDays));
+
+            // НДФЛ
+            BigDecimal taxAmount = grossVacationPay.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
+
+            // чистые
+            return grossVacationPay.subtract(taxAmount);
+        } catch (ArithmeticException ex) {
+            throw new CustomValidationException("Error calculating vacation pay: " + ex.getMessage());
+        } catch (Exception ex) {
+            // остальные ошибки
+            throw new CustomValidationException("Unexpected error: " + ex.getMessage());
         }
-        // до вычета налогов
-        BigDecimal grossVacationPay = averageSalary.divide(WORK_DAYS_IN_MONTH, 2, RoundingMode.HALF_UP)
-                .multiply(BigDecimal.valueOf(vacationDays));
-
-        // НДФЛ
-        BigDecimal taxAmount = grossVacationPay.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
-
-        // чистые
-        return grossVacationPay.subtract(taxAmount);
     }
 
     private int filterOutHolidaysAndWeekends(List<LocalDate> vacationDays) {
