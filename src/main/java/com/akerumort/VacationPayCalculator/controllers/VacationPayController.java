@@ -21,7 +21,7 @@ public class VacationPayController {
     private final VacationPayService vacationPayService;
 
     @Operation(
-            summary = "Calculate vacation pay",
+            summary = "Calculate vacation pay with personal income tax",
             description = "Calculates vacation pay based on average salary, number of vacation days, " +
                     "and optional vacation dates.",
             responses = {

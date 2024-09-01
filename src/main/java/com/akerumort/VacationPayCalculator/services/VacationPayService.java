@@ -21,6 +21,7 @@ public class VacationPayService {
     private static final Logger logger = LogManager.getLogger(VacationPayService.class);
     private static final BigDecimal WORK_DAYS_IN_MONTH = new BigDecimal(29.3);
     private static final BigDecimal TAX_RATE = new BigDecimal("0.13"); // НДФЛ 13%
+    private static final String TAX_MESSAGE = "Amount is calculated after deducting 13% tax.";
 
     public Object calculateVacationPay(BigDecimal averageSalary, int vacationDays,
                                        List<LocalDate> vacationDates,
@@ -44,7 +45,7 @@ public class VacationPayService {
                 BigDecimal taxAmount = grossVacationPay.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
                 BigDecimal vacationPay = grossVacationPay.subtract(taxAmount);
                 logger.info("Calculated vacation pay without specific dates: {}", vacationPay);
-                return new SimpleVacationPayResponseDto(vacationPay);
+                return new SimpleVacationPayResponseDto(vacationPay, TAX_MESSAGE);
             } else {
                 // с учетом конкретных дат
                 int weekendsAndHolidays = filterOutHolidaysAndWeekends(vacationDates);
@@ -58,7 +59,7 @@ public class VacationPayService {
                 logger.info("Calculated vacation pay with specific dates: vacationPay={}, " +
                                 "weekendsAndHolidays={}, paidVacationDays={}",
                         vacationPay, weekendsAndHolidays, paidVacationDays);
-                return new DetailedVacationPayResponseDto(vacationPay, weekendsAndHolidays, paidVacationDays);
+                return new DetailedVacationPayResponseDto(vacationPay, weekendsAndHolidays, paidVacationDays, TAX_MESSAGE);
             }
         } catch (ArithmeticException ex) {
             logger.error("Error calculating vacation pay: {}", ex.getMessage());

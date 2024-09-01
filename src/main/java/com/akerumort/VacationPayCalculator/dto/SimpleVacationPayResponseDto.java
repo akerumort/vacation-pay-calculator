@@ -19,4 +19,8 @@ public class SimpleVacationPayResponseDto {
     @Schema(description = "The calculated vacation pay", example = "1000.00")
     @DecimalMin(value = "0.0", inclusive = false, message = "Vacation pay must be greater than zero")
     private BigDecimal vacationPay;
+
+    @Schema(description = "Message indicating that the amount is after tax deduction",
+            example = "Amount is calculated after deducting 13% tax.")
+    private String message = "Amount is calculated after deducting 13% tax.";
 }

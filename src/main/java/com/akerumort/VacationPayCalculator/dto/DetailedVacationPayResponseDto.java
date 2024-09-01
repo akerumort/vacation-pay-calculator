@@ -25,4 +25,8 @@ public class DetailedVacationPayResponseDto {
 
     @Schema(description = "The number of paid vacation days excluding weekends and public holidays", example = "20")
     private Integer paidVacationDays;
+
+    @Schema(description = "Message indicating that the amount is after tax deduction",
+            example = "Amount is calculated after deducting 13% tax.")
+    private String message = "Amount is calculated after deducting 13% tax.";
 }
