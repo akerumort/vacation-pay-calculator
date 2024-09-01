@@ -3,7 +3,6 @@ package com.akerumort.VacationPayCalculator.dto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -30,4 +29,7 @@ public class VacationPayRequestDto {
 
     @Valid
     private List<LocalDate> vacationDates;
+
+    private LocalDate vacationStartDate;
+    private LocalDate vacationEndDate;
 }
