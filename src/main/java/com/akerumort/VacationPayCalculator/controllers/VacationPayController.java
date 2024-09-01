@@ -1,7 +1,7 @@
 package com.akerumort.VacationPayCalculator.controllers;
 
 import com.akerumort.VacationPayCalculator.dto.VacationPayRequestDto;
-import com.akerumort.VacationPayCalculator.dto.VacationPayResponseDto;
+import com.akerumort.VacationPayCalculator.dto.SimpleVacationPayResponseDto;
 import com.akerumort.VacationPayCalculator.exceptions.CustomValidationException;
 import com.akerumort.VacationPayCalculator.mappers.VacationPayMapper;
 import com.akerumort.VacationPayCalculator.services.VacationPayService;
@@ -23,20 +23,24 @@ public class VacationPayController {
     private final VacationPayMapper vacationPayMapper;
 
     @PostMapping
-    public ResponseEntity<VacationPayResponseDto> calculateVacationPay(
-            @Valid @RequestBody VacationPayRequestDto requestDto) {
-
+    public ResponseEntity<Object> calculateVacationPay(@Valid @RequestBody VacationPayRequestDto requestDto) {
         try {
-            BigDecimal vacationPay = vacationPayService.calculateVacationPay(
+            // без конкретных дат
+            Object response = vacationPayService.calculateVacationPay(
                     requestDto.getAverageSalary(),
                     requestDto.getVacationDays(),
                     requestDto.getVacationDates());
 
-            return ResponseEntity.ok(vacationPayMapper.toDto(vacationPay));
+            // с конкретными датами
+            if (requestDto.getVacationDates() == null || requestDto.getVacationDates().isEmpty()) {
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.ok(response);
+            }
         } catch (CustomValidationException ex) {
-            return ResponseEntity.badRequest().body(new VacationPayResponseDto(BigDecimal.ZERO));
+            return ResponseEntity.badRequest().body(new SimpleVacationPayResponseDto(BigDecimal.ZERO));
         } catch (Exception ex) {
-            return ResponseEntity.status(500).body(new VacationPayResponseDto(BigDecimal.ZERO));
+            return ResponseEntity.status(500).body(new SimpleVacationPayResponseDto(BigDecimal.ZERO));
         }
     }
 }

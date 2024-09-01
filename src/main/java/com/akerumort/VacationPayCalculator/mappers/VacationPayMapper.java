@@ -1,11 +1,11 @@
 package com.akerumort.VacationPayCalculator.mappers;
 
-import com.akerumort.VacationPayCalculator.dto.VacationPayResponseDto;
+import com.akerumort.VacationPayCalculator.dto.SimpleVacationPayResponseDto;
 import org.mapstruct.Mapper;
 
 import java.math.BigDecimal;
 
 @Mapper(componentModel = "spring")
 public interface VacationPayMapper {
-    VacationPayResponseDto toDto(BigDecimal vacationPay);
+    SimpleVacationPayResponseDto toDto(BigDecimal vacationPay);
 }
