@@ -34,11 +34,19 @@ public class VacationPayService {
 
         try {
             validateDates(vacationStartDate, vacationEndDate);
+
+            // инициализация списка vacationDates как пустого, если он равен null
+            if (vacationDates == null) {
+                vacationDates = List.of();
+            }
+
+            // проверка на совпадение с vacationDays
             vacationDates = handleVacationDates(vacationDates, vacationStartDate, vacationEndDate, vacationDays);
 
+            // проверка на наличие дублирующихся дат
             checkForDuplicateDates(vacationDates);
 
-            if (vacationDates == null || vacationDates.isEmpty()) {
+            if (vacationDates.isEmpty()) {
                 // без учета конкретных дат
                 BigDecimal grossVacationPay = averageSalary.divide(WORK_DAYS_IN_MONTH, 2, RoundingMode.HALF_UP)
                         .multiply(BigDecimal.valueOf(vacationDays));
@@ -50,6 +58,15 @@ public class VacationPayService {
                 // с учетом конкретных дат
                 int weekendsAndHolidays = filterOutHolidaysAndWeekends(vacationDates);
                 int paidVacationDays = vacationDates.size() - weekendsAndHolidays;
+
+                /*if (paidVacationDays < 0) {
+                    paidVacationDays = 0;
+                }*/
+
+                if (vacationDays != (paidVacationDays + weekendsAndHolidays)) {
+                    throw new CustomValidationException("The number of vacation days does not match the " +
+                            "provided vacation dates.");
+                }
 
                 BigDecimal grossVacationPay = averageSalary.divide(WORK_DAYS_IN_MONTH, 2, RoundingMode.HALF_UP)
                         .multiply(BigDecimal.valueOf(paidVacationDays));
@@ -69,6 +86,7 @@ public class VacationPayService {
             throw new CustomValidationException("Unexpected error: " + ex.getMessage());
         }
     }
+
 
     private int filterOutHolidaysAndWeekends(List<LocalDate> vacationDates) {
         logger.info("Filtering out holidays and weekends from vacationDates...");
@@ -96,9 +114,6 @@ public class VacationPayService {
             if (vacationDates.size() != vacationDays) {
                 throw new CustomValidationException("The vacation days don't match the number of dates shown.");
             }
-        } else if (vacationDates == null) {
-            vacationDates = List.of(); // если даты не предоставлены
-            logger.info("No vacation dates provided, initialized with an empty list.");
         }
 
         return vacationDates;
