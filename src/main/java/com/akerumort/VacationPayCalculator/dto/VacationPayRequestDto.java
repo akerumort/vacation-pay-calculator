@@ -1,5 +1,9 @@
 package com.akerumort.VacationPayCalculator.dto;
 
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -11,7 +15,15 @@ import java.util.List;
 @Setter
 public class VacationPayRequestDto {
 
+    @NotNull(message = "Average salary cannot be null")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Average salary must be greater than zero")
     private BigDecimal averageSalary;
+
+    @NotNull(message = "Vacation days cannot be null")
+    @Min(value = 1, message = "Vacation days must be at least 1")
     private int vacationDays;
-    private List<LocalDate> vacationDates;
+
+    @NotEmpty(message = "Vacation dates cannot be empty")
+    private List<@NotNull(message = "Date cannot be null")
+            LocalDate> vacationDates;
 }
