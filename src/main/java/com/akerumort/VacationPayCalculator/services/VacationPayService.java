@@ -24,7 +24,13 @@ public class VacationPayService {
                                        LocalDate vacationStartDate,
                                        LocalDate vacationEndDate) {
         try {
-            // проверка корректности дат
+            // проверка на указание обеих дат (начала и конца отпуска)
+            if ((vacationStartDate != null && vacationEndDate == null) ||
+                    (vacationEndDate != null && vacationStartDate == null)) {
+                throw new CustomValidationException("Both start and end dates of the leave must be entered.");
+            }
+
+            // проверка на соответствие начальной и конечной дат
             if (vacationStartDate != null && vacationEndDate != null) {
                 if (vacationEndDate.isBefore(vacationStartDate)) {
                     throw new CustomValidationException("The end date of the leave may " +
