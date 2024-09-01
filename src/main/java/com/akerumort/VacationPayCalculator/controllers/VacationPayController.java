@@ -3,6 +3,9 @@ package com.akerumort.VacationPayCalculator.controllers;
 import com.akerumort.VacationPayCalculator.dto.VacationPayRequestDto;
 import com.akerumort.VacationPayCalculator.exceptions.CustomValidationException;
 import com.akerumort.VacationPayCalculator.services.VacationPayService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +20,24 @@ public class VacationPayController {
 
     private final VacationPayService vacationPayService;
 
+    @Operation(
+            summary = "Calculate vacation pay",
+            description = "Calculates vacation pay based on average salary, number of vacation days, " +
+                    "and optional vacation dates.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Successfully calculated vacation pay",
+                            content = @io.swagger.v3.oas.annotations.media.Content(
+                            schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = Object.class)
+                    )),
+                    @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
+                    @ApiResponse(responseCode = "500", description = "Unexpected server error")
+            }
+    )
     @PostMapping
-    public ResponseEntity<Object> calculateVacationPay(@Valid @RequestBody VacationPayRequestDto requestDto) {
+    public ResponseEntity<Object> calculateVacationPay(@Valid @RequestBody
+                                                           @Parameter(description =
+                                                                   "Request payload for calculating vacation pay")
+                                                           VacationPayRequestDto requestDto) {
 
         try {
             Object response = vacationPayService.calculateVacationPay(
