@@ -3,6 +3,8 @@ package com.akerumort.VacationPayCalculator.services;
 import com.akerumort.VacationPayCalculator.dto.DetailedVacationPayResponseDto;
 import com.akerumort.VacationPayCalculator.dto.SimpleVacationPayResponseDto;
 import com.akerumort.VacationPayCalculator.exceptions.CustomValidationException;
+import com.akerumort.VacationPayCalculator.mappers.VacationPayMapper;
+import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
@@ -16,12 +18,15 @@ import java.util.List;
 import java.util.Set;
 
 @Service
+@RequiredArgsConstructor
 public class VacationPayService {
 
     private static final Logger logger = LogManager.getLogger(VacationPayService.class);
     private static final BigDecimal WORK_DAYS_IN_MONTH = new BigDecimal(29.3);
     private static final BigDecimal TAX_RATE = new BigDecimal("0.13"); // НДФЛ 13%
     private static final String TAX_MESSAGE = "Amount is calculated after deducting 13% tax.";
+
+    private final VacationPayMapper vacationPayMapper;
 
     public Object calculateVacationPay(BigDecimal averageSalary, int vacationDays,
                                        List<LocalDate> vacationDates,
@@ -53,15 +58,11 @@ public class VacationPayService {
                 BigDecimal taxAmount = grossVacationPay.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
                 BigDecimal vacationPay = grossVacationPay.subtract(taxAmount);
                 logger.info("Calculated vacation pay without specific dates: {}", vacationPay);
-                return new SimpleVacationPayResponseDto(vacationPay, TAX_MESSAGE);
+                return vacationPayMapper.toSimpleDto(vacationPay, TAX_MESSAGE);
             } else {
                 // с учетом конкретных дат
                 int weekendsAndHolidays = filterOutHolidaysAndWeekends(vacationDates);
                 int paidVacationDays = vacationDates.size() - weekendsAndHolidays;
-
-                /*if (paidVacationDays < 0) {
-                    paidVacationDays = 0;
-                }*/
 
                 if (vacationDays != (paidVacationDays + weekendsAndHolidays)) {
                     throw new CustomValidationException("The number of vacation days does not match the " +
@@ -76,7 +77,7 @@ public class VacationPayService {
                 logger.info("Calculated vacation pay with specific dates: vacationPay={}, " +
                                 "weekendsAndHolidays={}, paidVacationDays={}",
                         vacationPay, weekendsAndHolidays, paidVacationDays);
-                return new DetailedVacationPayResponseDto(vacationPay, weekendsAndHolidays, paidVacationDays, TAX_MESSAGE);
+                return vacationPayMapper.toDetailedDto(vacationPay, weekendsAndHolidays, paidVacationDays, TAX_MESSAGE);
             }
         } catch (ArithmeticException ex) {
             logger.error("Error calculating vacation pay: {}", ex.getMessage());
@@ -86,7 +87,6 @@ public class VacationPayService {
             throw new CustomValidationException("Unexpected error: " + ex.getMessage());
         }
     }
-
 
     private int filterOutHolidaysAndWeekends(List<LocalDate> vacationDates) {
         logger.info("Filtering out holidays and weekends from vacationDates...");
