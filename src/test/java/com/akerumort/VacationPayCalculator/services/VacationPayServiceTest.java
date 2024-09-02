@@ -3,10 +3,12 @@ package com.akerumort.VacationPayCalculator.services;
 import com.akerumort.VacationPayCalculator.dto.DetailedVacationPayResponseDto;
 import com.akerumort.VacationPayCalculator.dto.SimpleVacationPayResponseDto;
 import com.akerumort.VacationPayCalculator.exceptions.CustomValidationException;
+import com.akerumort.VacationPayCalculator.mappers.VacationPayMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -15,12 +17,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class VacationPayServiceTest {
 
     @InjectMocks
     private VacationPayService vacationPayService;
+
+    @Mock
+    private VacationPayMapper vacationPayMapper;
 
     private BigDecimal averageSalary;
     private int vacationDays;
@@ -39,6 +47,12 @@ public class VacationPayServiceTest {
 
     @Test
     public void testCalculateVacationPayWithoutSpecificDates() {
+        SimpleVacationPayResponseDto expectedResponse = new SimpleVacationPayResponseDto(
+                new BigDecimal("32000.00"), "Amount is calculated after deducting 13% tax.");
+
+        when(vacationPayMapper.toSimpleDto(any(BigDecimal.class), any(String.class)))
+                .thenReturn(expectedResponse);
+
         Object response = vacationPayService.calculateVacationPay(averageSalary, vacationDays,
                 null, null, null);
 
@@ -50,6 +64,13 @@ public class VacationPayServiceTest {
 
     @Test
     public void testCalculateVacationPayWithSpecificDates() {
+        DetailedVacationPayResponseDto expectedResponse = new DetailedVacationPayResponseDto(
+                new BigDecimal("32000.00"), 4, 10, "Amount is " +
+                "calculated after deducting 13% tax.");
+
+        when(vacationPayMapper.toDetailedDto(any(BigDecimal.class), anyInt(), anyInt(), any(String.class)))
+                .thenReturn(expectedResponse);
+
         Object response = vacationPayService.calculateVacationPay(averageSalary, vacationDays,
                 vacationDates, vacationStartDate, vacationEndDate);
 
