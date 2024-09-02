@@ -6,6 +6,7 @@ import com.akerumort.VacationPayCalculator.services.VacationPayService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.media.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,9 +27,9 @@ public class VacationPayController {
                     "and optional vacation dates.",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Successfully calculated vacation pay",
-                            content = @io.swagger.v3.oas.annotations.media.Content(
-                            schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = Object.class)
-                    )),
+                            content = @Content(
+                                    schema = @Schema(implementation = Object.class)
+                            )),
                     @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
                     @ApiResponse(responseCode = "500", description = "Unexpected server error")
             }
