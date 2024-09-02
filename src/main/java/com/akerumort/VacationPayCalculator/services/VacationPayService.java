@@ -26,6 +26,16 @@ public class VacationPayService {
 
     private final VacationPayMapper vacationPayMapper;
 
+    /**
+     * Calculates vacation pay considering the average salary, number of vacation days, and vacation dates.
+     *
+     * @param averageSalary Average salary
+     * @param vacationDays Number of vacation days
+     * @param vacationDates List of specific vacation dates
+     * @param vacationStartDate Start date of the vacation
+     * @param vacationEndDate End date of the vacation
+     * @return DTO with vacation pay calculation
+     */
     public Object calculateVacationPay(BigDecimal averageSalary, int vacationDays,
                                        List<LocalDate> vacationDates,
                                        LocalDate vacationStartDate,
@@ -56,6 +66,12 @@ public class VacationPayService {
         }
     }
 
+    /**
+     * Validates the start and end dates of the vacation.
+     *
+     * @param vacationStartDate Start date of the vacation
+     * @param vacationEndDate End date of the vacation
+     */
     private void validateDates(LocalDate vacationStartDate, LocalDate vacationEndDate) {
         logger.info("Validating dates: vacationStartDate={}, vacationEndDate={}",
                 vacationStartDate, vacationEndDate);
@@ -70,6 +86,14 @@ public class VacationPayService {
         }
     }
 
+    /**
+     * Initializes the list of vacation dates if it is null.
+     *
+     * @param vacationDates List of vacation dates
+     * @param vacationStartDate Start date of the vacation
+     * @param vacationEndDate End date of the vacation
+     * @return Initialized list of vacation dates
+     */
     private List<LocalDate> initializeVacationDates(List<LocalDate> vacationDates,
                                                     LocalDate vacationStartDate, LocalDate vacationEndDate) {
         if (vacationDates == null) {
@@ -78,6 +102,15 @@ public class VacationPayService {
         return vacationDates;
     }
 
+    /**
+     * Processes and adjusts the list of vacation dates based on the provided start and end dates.
+     *
+     * @param vacationDates List of vacation dates
+     * @param vacationStartDate Start date of the vacation
+     * @param vacationEndDate End date of the vacation
+     * @param vacationDays Number of vacation days
+     * @return Processed list of vacation dates
+     */
     private List<LocalDate> handleVacationDates(List<LocalDate> vacationDates, LocalDate vacationStartDate,
                                                 LocalDate vacationEndDate, int vacationDays) {
 
@@ -101,6 +134,13 @@ public class VacationPayService {
         return vacationDates;
     }
 
+    /**
+     * Validates that the provided vacation dates match the expected dates based on the start and end dates.
+     *
+     * @param vacationDates List of vacation dates
+     * @param startDate Start date of the vacation
+     * @param endDate End date of the vacation
+     */
     private void validateVacationDates(List<LocalDate> vacationDates, LocalDate startDate, LocalDate endDate) {
         logger.info("Validating vacation dates: {}", vacationDates);
 
@@ -112,6 +152,11 @@ public class VacationPayService {
         }
     }
 
+    /**
+     * Checks for duplicate dates in the list of vacation dates.
+     *
+     * @param vacationDates List of vacation dates
+     */
     private void checkForDuplicateDates(List<LocalDate> vacationDates) {
         logger.info("Checking for duplicate dates in vacationDates...");
 
@@ -122,6 +167,13 @@ public class VacationPayService {
         }
     }
 
+    /**
+     * Calculates vacation pay without considering specific dates.
+     *
+     * @param averageSalary Average salary
+     * @param vacationDays Number of vacation days
+     * @return DTO with vacation pay calculation
+     */
     private Object calculateSimpleVacationPay(BigDecimal averageSalary, int vacationDays) {
         BigDecimal grossVacationPay = calculateGrossVacationPay(averageSalary, vacationDays);
         BigDecimal vacationPay = calculateNetVacationPay(grossVacationPay);
@@ -129,6 +181,14 @@ public class VacationPayService {
         return vacationPayMapper.toSimpleDto(vacationPay, TAX_MESSAGE);
     }
 
+    /**
+     * Calculates vacation pay with consideration of specific dates.
+     *
+     * @param averageSalary Average salary
+     * @param vacationDays Number of vacation days
+     * @param vacationDates List of vacation dates
+     * @return DTO with vacation pay calculation
+     */
     private Object calculateDetailedVacationPay(BigDecimal averageSalary, int vacationDays,
                                                 List<LocalDate> vacationDates) {
         int weekendsAndHolidays = filterOutHolidaysAndWeekends(vacationDates);
@@ -148,27 +208,58 @@ public class VacationPayService {
         return vacationPayMapper.toDetailedDto(vacationPay, weekendsAndHolidays, paidVacationDays, TAX_MESSAGE);
     }
 
+    /**
+     * Calculates gross vacation pay.
+     *
+     * @param averageSalary Average salary
+     * @param days Number of paid days
+     * @return Gross vacation pay
+     */
     private BigDecimal calculateGrossVacationPay(BigDecimal averageSalary, int days) {
         return averageSalary.divide(WORK_DAYS_IN_MONTH, 2, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(days));
     }
 
+    /**
+     * Calculates net vacation pay after tax deduction.
+     *
+     * @param grossVacationPay Gross vacation pay
+     * @return Net vacation pay
+     */
     private BigDecimal calculateNetVacationPay(BigDecimal grossVacationPay) {
         BigDecimal taxAmount = grossVacationPay.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
         return grossVacationPay.subtract(taxAmount);
     }
 
+    /**
+     * Filters out holidays and weekends from the list of vacation dates.
+     *
+     * @param vacationDates List of vacation dates
+     * @return Number of holidays and weekends
+     */
     private int filterOutHolidaysAndWeekends(List<LocalDate> vacationDates) {
         logger.info("Filtering out holidays and weekends from vacationDates...");
         return (int) vacationDates.stream().filter(this::isHolidayOrWeekend).count();
     }
 
+    /**
+     * Checks if a given date is a holiday or weekend.
+     *
+     * @param date Date to check
+     * @return true if the date is a holiday or weekend; otherwise false
+     */
     private boolean isHolidayOrWeekend(LocalDate date) {
         return date.getDayOfWeek() == DayOfWeek.SATURDAY ||
                 date.getDayOfWeek() == DayOfWeek.SUNDAY ||
                 isPublicHoliday(date);
     }
 
+    /**
+     * Checks if a given date is a public holiday.
+     *
+     * @param date Date to check
+     * @return true if the date is a public holiday; otherwise false
+     */
     private boolean isPublicHoliday(LocalDate date) {
         Set<LocalDate> holidays = Set.of(
                 LocalDate.of(date.getYear(), 1, 1),
