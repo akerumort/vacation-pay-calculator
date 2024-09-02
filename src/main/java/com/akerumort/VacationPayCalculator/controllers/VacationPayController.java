@@ -38,7 +38,6 @@ public class VacationPayController {
                                                            @Parameter(description =
                                                                    "Request payload for calculating vacation pay")
                                                            VacationPayRequestDto requestDto) {
-
         try {
             Object response = vacationPayService.calculateVacationPay(
                     requestDto.getAverageSalary(),

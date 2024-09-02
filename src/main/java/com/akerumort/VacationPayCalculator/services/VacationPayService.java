@@ -1,7 +1,5 @@
 package com.akerumort.VacationPayCalculator.services;
 
-import com.akerumort.VacationPayCalculator.dto.DetailedVacationPayResponseDto;
-import com.akerumort.VacationPayCalculator.dto.SimpleVacationPayResponseDto;
 import com.akerumort.VacationPayCalculator.exceptions.CustomValidationException;
 import com.akerumort.VacationPayCalculator.mappers.VacationPayMapper;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +20,7 @@ import java.util.Set;
 public class VacationPayService {
 
     private static final Logger logger = LogManager.getLogger(VacationPayService.class);
-    private static final BigDecimal WORK_DAYS_IN_MONTH = new BigDecimal(29.3);
+    private static final BigDecimal WORK_DAYS_IN_MONTH = new BigDecimal("29.3");
     private static final BigDecimal TAX_RATE = new BigDecimal("0.13"); // НДФЛ 13%
     private static final String TAX_MESSAGE = "Amount is calculated after deducting 13% tax.";
 
@@ -40,44 +38,14 @@ public class VacationPayService {
         try {
             validateDates(vacationStartDate, vacationEndDate);
 
-            // инициализация списка vacationDates как пустого, если он равен null
-            if (vacationDates == null) {
-                vacationDates = List.of();
-            }
-
-            // проверка на совпадение с vacationDays
+            vacationDates = initializeVacationDates(vacationDates, vacationStartDate, vacationEndDate);
             vacationDates = handleVacationDates(vacationDates, vacationStartDate, vacationEndDate, vacationDays);
-
-            // проверка на наличие дублирующихся дат
             checkForDuplicateDates(vacationDates);
 
             if (vacationDates.isEmpty()) {
-                // без учета конкретных дат
-                BigDecimal grossVacationPay = averageSalary.divide(WORK_DAYS_IN_MONTH, 2, RoundingMode.HALF_UP)
-                        .multiply(BigDecimal.valueOf(vacationDays));
-                BigDecimal taxAmount = grossVacationPay.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
-                BigDecimal vacationPay = grossVacationPay.subtract(taxAmount);
-                logger.info("Calculated vacation pay without specific dates: {}", vacationPay);
-                return vacationPayMapper.toSimpleDto(vacationPay, TAX_MESSAGE);
+                return calculateSimpleVacationPay(averageSalary, vacationDays);
             } else {
-                // с учетом конкретных дат
-                int weekendsAndHolidays = filterOutHolidaysAndWeekends(vacationDates);
-                int paidVacationDays = vacationDates.size() - weekendsAndHolidays;
-
-                if (vacationDays != (paidVacationDays + weekendsAndHolidays)) {
-                    throw new CustomValidationException("The number of vacation days does not match the " +
-                            "provided vacation dates.");
-                }
-
-                BigDecimal grossVacationPay = averageSalary.divide(WORK_DAYS_IN_MONTH, 2, RoundingMode.HALF_UP)
-                        .multiply(BigDecimal.valueOf(paidVacationDays));
-                BigDecimal taxAmount = grossVacationPay.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
-                BigDecimal vacationPay = grossVacationPay.subtract(taxAmount);
-
-                logger.info("Calculated vacation pay with specific dates: vacationPay={}, " +
-                                "weekendsAndHolidays={}, paidVacationDays={}",
-                        vacationPay, weekendsAndHolidays, paidVacationDays);
-                return vacationPayMapper.toDetailedDto(vacationPay, weekendsAndHolidays, paidVacationDays, TAX_MESSAGE);
+                return calculateDetailedVacationPay(averageSalary, vacationDays, vacationDates);
             }
         } catch (ArithmeticException ex) {
             logger.error("Error calculating vacation pay: {}", ex.getMessage());
@@ -88,10 +56,26 @@ public class VacationPayService {
         }
     }
 
-    private int filterOutHolidaysAndWeekends(List<LocalDate> vacationDates) {
-        logger.info("Filtering out holidays and weekends from vacationDates...");
+    private void validateDates(LocalDate vacationStartDate, LocalDate vacationEndDate) {
+        logger.info("Validating dates: vacationStartDate={}, vacationEndDate={}",
+                vacationStartDate, vacationEndDate);
 
-        return (int) vacationDates.stream().filter(this::isHolidayOrWeekend).count();
+        if ((vacationStartDate != null && vacationEndDate == null) ||
+                (vacationEndDate != null && vacationStartDate == null)) {
+            throw new CustomValidationException("Both start and end dates of the leave must be entered.");
+        }
+
+        if (vacationStartDate != null && vacationEndDate != null && vacationEndDate.isBefore(vacationStartDate)) {
+            throw new CustomValidationException("The end date of the leave may not be earlier than the start date.");
+        }
+    }
+
+    private List<LocalDate> initializeVacationDates(List<LocalDate> vacationDates,
+                                                    LocalDate vacationStartDate, LocalDate vacationEndDate) {
+        if (vacationDates == null) {
+            vacationDates = List.of();
+        }
+        return vacationDates;
     }
 
     private List<LocalDate> handleVacationDates(List<LocalDate> vacationDates, LocalDate vacationStartDate,
@@ -100,14 +84,12 @@ public class VacationPayService {
         logger.info("Handling vacation dates...");
 
         if (vacationStartDate != null && vacationEndDate != null) {
-            List<LocalDate> generatedDates = vacationStartDate.datesUntil(vacationEndDate.
-                    plusDays(1)).toList();
+            List<LocalDate> generatedDates = vacationStartDate.datesUntil(vacationEndDate.plusDays(1)).toList();
 
-            if (vacationDates == null || vacationDates.isEmpty()) {
+            if (vacationDates.isEmpty()) {
                 vacationDates = generatedDates;
                 logger.info("Generated vacation dates: {}", vacationDates);
             } else {
-                // проверка на то, что переданные даты совпадают с ожидаемыми
                 validateVacationDates(vacationDates, vacationStartDate, vacationEndDate);
             }
 
@@ -117,24 +99,6 @@ public class VacationPayService {
         }
 
         return vacationDates;
-    }
-
-    private void validateDates(LocalDate vacationStartDate, LocalDate vacationEndDate) {
-
-        logger.info("Validating dates: vacationStartDate={}, vacationEndDate={}",
-                vacationStartDate, vacationEndDate);
-
-        if ((vacationStartDate != null && vacationEndDate == null) ||
-                (vacationEndDate != null && vacationStartDate == null)) {
-            throw new CustomValidationException("Both start and end dates of the leave must be entered.");
-        }
-
-        if (vacationStartDate != null && vacationEndDate != null) {
-            if (vacationEndDate.isBefore(vacationStartDate)) {
-                throw new CustomValidationException("The end date of the leave " +
-                        "may not be earlier than the start date.");
-            }
-        }
     }
 
     private void validateVacationDates(List<LocalDate> vacationDates, LocalDate startDate, LocalDate endDate) {
@@ -152,19 +116,57 @@ public class VacationPayService {
         logger.info("Checking for duplicate dates in vacationDates...");
 
         Set<LocalDate> dateSet = new HashSet<>(vacationDates);
+
         if (dateSet.size() < vacationDates.size()) {
             throw new CustomValidationException("Duplicate dates were found in the list of vacation dates.");
         }
     }
 
+    private Object calculateSimpleVacationPay(BigDecimal averageSalary, int vacationDays) {
+        BigDecimal grossVacationPay = calculateGrossVacationPay(averageSalary, vacationDays);
+        BigDecimal vacationPay = calculateNetVacationPay(grossVacationPay);
+        logger.info("Calculated vacation pay without specific dates: {}", vacationPay);
+        return vacationPayMapper.toSimpleDto(vacationPay, TAX_MESSAGE);
+    }
+
+    private Object calculateDetailedVacationPay(BigDecimal averageSalary, int vacationDays,
+                                                List<LocalDate> vacationDates) {
+        int weekendsAndHolidays = filterOutHolidaysAndWeekends(vacationDates);
+        int paidVacationDays = vacationDates.size() - weekendsAndHolidays;
+
+        if (vacationDays != (paidVacationDays + weekendsAndHolidays)) {
+            throw new CustomValidationException("The number of vacation days does not match " +
+                    "the provided vacation dates.");
+        }
+
+        BigDecimal grossVacationPay = calculateGrossVacationPay(averageSalary, paidVacationDays);
+        BigDecimal vacationPay = calculateNetVacationPay(grossVacationPay);
+
+        logger.info("Calculated vacation pay with specific dates: vacationPay={}, " +
+                        "weekendsAndHolidays={}, paidVacationDays={}",
+                vacationPay, weekendsAndHolidays, paidVacationDays);
+        return vacationPayMapper.toDetailedDto(vacationPay, weekendsAndHolidays, paidVacationDays, TAX_MESSAGE);
+    }
+
+    private BigDecimal calculateGrossVacationPay(BigDecimal averageSalary, int days) {
+        return averageSalary.divide(WORK_DAYS_IN_MONTH, 2, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(days));
+    }
+
+    private BigDecimal calculateNetVacationPay(BigDecimal grossVacationPay) {
+        BigDecimal taxAmount = grossVacationPay.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
+        return grossVacationPay.subtract(taxAmount);
+    }
+
+    private int filterOutHolidaysAndWeekends(List<LocalDate> vacationDates) {
+        logger.info("Filtering out holidays and weekends from vacationDates...");
+        return (int) vacationDates.stream().filter(this::isHolidayOrWeekend).count();
+    }
+
     private boolean isHolidayOrWeekend(LocalDate date) {
-        boolean isHolidayOrWeekend = date.getDayOfWeek() == DayOfWeek.SATURDAY ||
+        return date.getDayOfWeek() == DayOfWeek.SATURDAY ||
                 date.getDayOfWeek() == DayOfWeek.SUNDAY ||
                 isPublicHoliday(date);
-        if (isHolidayOrWeekend) {
-            logger.debug("Date {} is a holiday or weekend", date);
-        }
-        return isHolidayOrWeekend;
     }
 
     private boolean isPublicHoliday(LocalDate date) {
